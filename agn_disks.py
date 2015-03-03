@@ -39,12 +39,14 @@ def compute_planck_curve(wave, temp):
     Constants in SI units
     """
 
-    planck_c = 6.626e-34    #
-    boltzmann_c = 1.38e-23  #
-    light_speed = 3e8       #m s^-1
+    planck_c = 6.626e-34    # J s
+    boltzmann_c = 1.38e-23  # J K^-1
+    light_speed = 2.9979e8  # m s^-1
 
-    spec_radiance = ((2*planck_c*light_speed**2)/wave**5)*\
-                    (1/np.expm1((planck_c*light_speed)/(wave*boltzmann_c*temp)))
+    spec_radiance = ((8*np.pi*planck_c*light_speed)/wave**5)*\
+                    (1/(np.expm1(planck_c*light_speed)/(wave*boltzmann_c*temp)))
+
+    #spec_radiance = ((2*planck_c*wave**3)/(light_speed**2))*(1/np.expm1((planck_c*wave)/(boltzmann_c*temp)))
 
     return spec_radiance
 
@@ -57,7 +59,7 @@ def sum_planck_curves():
     return 0
 
 
-wave = np.linspace(1e-5,3)
+wave = np.linspace(0.1e-10, 15000e-10)
 
 plt.plot(wave, compute_planck_curve(wave, 3000))
 plt.xscale('log')
