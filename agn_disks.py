@@ -11,6 +11,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 light_speed = 2.9979e8  # m s^-1
+
 def readin_data(fname):
     """
     Read in the input SED.
@@ -27,6 +28,9 @@ def compute_temp(flux):
     Input is a numpy array
     """
 
+    # this won't be in the right units. need radius of object
+    # also the stefan-boltmann law if for luminonsity - not flux
+    # density (jansky)
     return flux**(1./4.)
 
 def compute_planck_wave(wave, temp):
@@ -58,6 +62,8 @@ def compute_planck_freq(freq, temp):
     planck_c = 6.626e-34    # J s
     boltzmann_c = 1.38e-23  # J K^-1
 
+    theta = 1e-3 # for now until I can get real values
+
     spec_radiance = ((2*planck_c*freq**3)/(light_speed**2))*\
                     (1/np.expm1((planck_c*freq)/(boltzmann_c*temp)))
 
@@ -72,7 +78,7 @@ def sum_planck_curves():
     return 0
 
 if __name__ == '__main__':
-    check = True
+    check = False
     if check:
         fig = plt.figure(figsize=(11, 5.5))
 
@@ -83,10 +89,11 @@ if __name__ == '__main__':
         ax1.plot(wave, compute_planck_wave(wave, 7500))
 
         ax2 = plt.subplot(1,2,2)
-        freq = np.linspace((2000*light_speed*8.0655e-5), light_speed/1e-6, 1e6)
-        ax2.plot(freq, compute_planck_freq(freq, 4500))
-        ax2.plot(freq, compute_planck_freq(freq, 6000))
-        ax2.plot(freq, compute_planck_freq(freq, 7500))
+        freq = np.linspace(0, 8e13, 1e6)
+        #freq = np.linspace((2000*light_speed*8.0655e-5), light_speed/1e-6, 1e6)
+        ax2.plot(freq, compute_planck_freq(freq, 500))
+        ax2.plot(freq, compute_planck_freq(freq, 400))
+        ax2.plot(freq, compute_planck_freq(freq, 200))
         plt.show()
         sys.exit()
 
@@ -95,7 +102,9 @@ if __name__ == '__main__':
 
     test_temps = compute_temp(test_flux)
     for temp in test_temps:
-        plt.plot(test_wave, compute_planck_wave(test_wave, temp))
+        print temp
+        #plt.plot(test_wave, compute_planck_freq(light_speed/test_wave, temp))
 
+    sys.exit()
     plt.plot(test_wave, test_flux, ls='none', marker='o', color='k')
     plt.show()
