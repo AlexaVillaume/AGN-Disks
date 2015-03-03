@@ -43,24 +43,25 @@ def compute_planck_wave(wave, temp):
     planck_c = 6.626e-34    # J s
     boltzmann_c = 1.38e-23  # J K^-1
 
-    spec_radiance = ((8*np.pi*planck_c*light_speed)/(wave**5))*\
+    spec_radiance = ((2*planck_c*light_speed**2)/(wave**5))*\
                     (1/np.expm1((planck_c*light_speed)/(boltzmann_c*temp*wave)))
 
     return spec_radiance
 
 def compute_planck_freq(freq, temp):
     """
-    freq is a numpy array.
-    Constants in SI units
+    freq is a numpy array. Constants in SI units.
+    Returning units of flux density (jansky). Assuming that the
+    angular size (?) of the object is << 1
     """
 
     planck_c = 6.626e-34    # J s
     boltzmann_c = 1.38e-23  # J K^-1
 
-    spec_radiance = ((8*np.pi*planck_c)/(light_speed**3))*\
-                    ((freq**3)/np.expm1((planck_c*freq)/(boltzmann_c*temp)))
+    spec_radiance = ((2*planck_c*freq**3)/(light_speed**2))*\
+                    (1/np.expm1((planck_c*freq)/(boltzmann_c*temp)))
 
-    return spec_radiance
+    return np.pi*spec_radiance*theta**2
 
 def sum_planck_curves():
     """
@@ -71,17 +72,30 @@ def sum_planck_curves():
     return 0
 
 if __name__ == '__main__':
-    check = False
+    check = True
     if check:
+        fig = plt.figure(figsize=(11, 5.5))
+
+        ax1 = plt.subplot(1,2,1)
         wave = np.linspace(6.2e-10, 1e-6, 1e6)
-        plt.plot(wave, compute_planck_wave(wave, 4500))
-        plt.plot(wave, compute_planck_wave(wave, 6000))
-        plt.plot(wave, compute_planck_wave(wave, 7500))
+        ax1.plot(wave, compute_planck_wave(wave, 4500))
+        ax1.plot(wave, compute_planck_wave(wave, 6000))
+        ax1.plot(wave, compute_planck_wave(wave, 7500))
+
+        ax2 = plt.subplot(1,2,2)
+        freq = np.linspace((2000*light_speed*8.0655e-5), light_speed/1e-6, 1e6)
+        ax2.plot(freq, compute_planck_freq(freq, 4500))
+        ax2.plot(freq, compute_planck_freq(freq, 6000))
+        ax2.plot(freq, compute_planck_freq(freq, 7500))
         plt.show()
+        sys.exit()
 
-    test_wave = np.array([3.55, 4.49, 5.72, 7.87, 23.68, 71.42, 155.9])
+    test_wave = np.array([3.55, 4.49, 5.72, 7.87, 23.68, 71.42, 155.9])*1e-6
     test_flux = np.array([132.65, 80.18, 58.74, 35.24, 8.8, 25.9, 87.4])
-    print compute_temp(test_flux)
 
-    #plt.plot(test_wave, test_flux, ls='none', marker='o', color='k')
-    #plt.show()
+    test_temps = compute_temp(test_flux)
+    for temp in test_temps:
+        plt.plot(test_wave, compute_planck_wave(test_wave, temp))
+
+    plt.plot(test_wave, test_flux, ls='none', marker='o', color='k')
+    plt.show()
