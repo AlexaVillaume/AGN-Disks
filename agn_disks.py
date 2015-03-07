@@ -10,28 +10,27 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-light_speed = 2.9979e8  # m s^-1
+light_speed = 2.9979e11  # cm s^-1
 
 def readin_data(fname):
     """
     Read in the input SED.
     """
-
     return 0
 
-def compute_temp(flux):
+def generate_spec(nu1, nu2, dist):
     """
-    Assume that the disk is optically thick such that
-    we can approximate the spectrum at each point as
-    a blackbody spectrum.
+    Generate a fake spectrum under the assumptions of
+    the standard accretion disk model.
 
-    Input is a numpy array
+    dist needs to be in cm
+
+    returns spectrum with luminosity at the source of
+    the object
     """
 
-    # this won't be in the right units. need radius of object
-    # also the stefan-boltmann law if for luminonsity - not flux
-    # density (jansky)
-    return flux**(1./4.)
+    freq = np.linspace(nu1, nu2, 1e4)
+    return [freq, (freq**(1./3.))*4*np.pi*dist**2]
 
 def compute_planck_wave(wave, temp):
     """
@@ -52,7 +51,7 @@ def compute_planck_wave(wave, temp):
 
     return spec_radiance
 
-def compute_planck_freq(freq, temp):
+def compute_planck_freq(freq, temp, dist):
     """
     freq is a numpy array. Constants in SI units.
     Returning units of flux density (jansky). Assuming that the
@@ -67,44 +66,61 @@ def compute_planck_freq(freq, temp):
     spec_radiance = ((2*planck_c*freq**3)/(light_speed**2))*\
                     (1/np.expm1((planck_c*freq)/(boltzmann_c*temp)))
 
-    return np.pi*spec_radiance*theta**2
+    return spec_radiance*4*np.pi*dist**2
+
+def check_planck():
+    """
+    Plot some test Planck curves to make sure those functions
+    are working
+    """
+    fig = plt.figure(figsize=(11, 5.5))
+
+    ax1 = plt.subplot(1,2,1)
+    wave = np.linspace(6.2e-10, 1e-6, 1e6)
+    ax1.plot(wave, compute_planck_wave(wave, 4500))
+    ax1.plot(wave, compute_planck_wave(wave, 6000))
+    ax1.plot(wave, compute_planck_wave(wave, 7500))
+
+    ax2 = plt.subplot(1,2,2)
+    freq = np.linspace(0, 8e13, 1e6)
+    ax2.plot(freq, compute_planck_freq(freq, 500))
+    ax2.plot(freq, compute_planck_freq(freq, 400))
+    ax2.plot(freq, compute_planck_freq(freq, 200))
+    plt.show()
 
 def sum_planck_curves():
     """
     Take the results of compute_planck_curve and
     sum (at each wavelength?)
     """
-
     return 0
+
+def temp_struc(radii, power):
+    return radii**power
 
 if __name__ == '__main__':
     check = False
     if check:
-        fig = plt.figure(figsize=(11, 5.5))
+        check_planck()
 
-        ax1 = plt.subplot(1,2,1)
-        wave = np.linspace(6.2e-10, 1e-6, 1e6)
-        ax1.plot(wave, compute_planck_wave(wave, 4500))
-        ax1.plot(wave, compute_planck_wave(wave, 6000))
-        ax1.plot(wave, compute_planck_wave(wave, 7500))
+    std_spec = generate_spec(2000*light_speed*8.0655e-5, light_speed/1e-6, 1000)
 
-        ax2 = plt.subplot(1,2,2)
-        freq = np.linspace(0, 8e13, 1e6)
-        #freq = np.linspace((2000*light_speed*8.0655e-5), light_speed/1e-6, 1e6)
-        ax2.plot(freq, compute_planck_freq(freq, 500))
-        ax2.plot(freq, compute_planck_freq(freq, 400))
-        ax2.plot(freq, compute_planck_freq(freq, 200))
-        plt.show()
-        sys.exit()
+    # Make computed SED
+    comp_spec_freq = np.linspace(2000*light_speed*8.0655e-5, light_speed/1e-6, 1e2)
+    disk_radii = np.logspace(1, 10) # units of ? reasonable values?
 
-    test_wave = np.array([3.55, 4.49, 5.72, 7.87, 23.68, 71.42, 155.9])*1e-6
-    test_flux = np.array([132.65, 80.18, 58.74, 35.24, 8.8, 25.9, 87.4])
+    comp_spec_flux = []
+    for nu in comp_spec_freq:
+        temps = temp_struc(disk_radii, -3./4.)
+        lum = []
+        for temp in temps:
+            lum.append(compute_planck_freq(temp, nu, 1000))
+        comp_spec_flux.append(sum(lum)*1e39)
 
-    test_temps = compute_temp(test_flux)
-    for temp in test_temps:
-        print temp
-        #plt.plot(test_wave, compute_planck_freq(light_speed/test_wave, temp))
-
-    sys.exit()
-    plt.plot(test_wave, test_flux, ls='none', marker='o', color='k')
+    plt.plot(std_spec[0], std_spec[1], ls='none', marker='o', color='k')
+    plt.plot(comp_spec_freq, comp_spec_flux, ls='-', color='r')
+    plt.xscale('log')
+    plt.yscale('log')
     plt.show()
+
+
