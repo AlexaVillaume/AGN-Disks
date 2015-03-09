@@ -32,25 +32,6 @@ def generate_spec(nu1, nu2, dist):
     freq = np.linspace(nu1, nu2, 1e4)
     return [freq, (freq**(1./3.))*4*np.pi*dist**2]
 
-def compute_planck_wave(wave, temp):
-    """
-    Compute blackbodies using Planck's lawat each
-    flux point using the the result from
-    compute_temp_struct.
-
-    wave is a numpy array.
-
-    Constants in SI units
-    """
-
-    planck_c = 6.626e-34    # J s
-    boltzmann_c = 1.38e-23  # J K^-1
-
-    spec_radiance = ((2*planck_c*light_speed**2)/(wave**5))*\
-                    (1/np.expm1((planck_c*light_speed)/(boltzmann_c*temp*wave)))
-
-    return spec_radiance
-
 def compute_planck_freq(freq, temp, dist):
     """
     freq is a numpy array. Constants in SI units.
@@ -67,26 +48,6 @@ def compute_planck_freq(freq, temp, dist):
                     (1/np.expm1((planck_c*freq)/(boltzmann_c*temp)))
 
     return spec_radiance*4*np.pi*dist**2
-
-def check_planck():
-    """
-    Plot some test Planck curves to make sure those functions
-    are working
-    """
-    fig = plt.figure(figsize=(11, 5.5))
-
-    ax1 = plt.subplot(1,2,1)
-    wave = np.linspace(6.2e-10, 1e-6, 1e6)
-    ax1.plot(wave, compute_planck_wave(wave, 4500))
-    ax1.plot(wave, compute_planck_wave(wave, 6000))
-    ax1.plot(wave, compute_planck_wave(wave, 7500))
-
-    ax2 = plt.subplot(1,2,2)
-    freq = np.linspace(0, 8e13, 1e6)
-    ax2.plot(freq, compute_planck_freq(freq, 500))
-    ax2.plot(freq, compute_planck_freq(freq, 400))
-    ax2.plot(freq, compute_planck_freq(freq, 200))
-    plt.show()
 
 def sum_planck_curves():
     """
