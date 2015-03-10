@@ -9,6 +9,8 @@ OUTPUT:
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+from astropy import units as u
+
 
 light_speed = 2.9979e11  # cm s^-1
 
@@ -18,7 +20,7 @@ def readin_data(fname):
     """
     return 0
 
-def generate_spec(nu1, nu2, dist):
+def generate_spec(nu1, nu2):
     """
     Generate a fake spectrum under the assumptions of
     the standard accretion disk model.
@@ -30,7 +32,7 @@ def generate_spec(nu1, nu2, dist):
     """
 
     freq = np.linspace(nu1, nu2, 1e4)
-    return [freq, (freq**(1./3.))*4*np.pi*dist**2]
+    return [freq, (freq**(1./3.))]
 
 def compute_planck_freq(freq, temp, dist):
     """
@@ -47,7 +49,8 @@ def compute_planck_freq(freq, temp, dist):
     spec_radiance = ((2*planck_c*freq**3)/(light_speed**2))*\
                     (1/np.expm1((planck_c*freq)/(boltzmann_c*temp)))
 
-    return spec_radiance*4*np.pi*dist**2
+    return spec_radiance
+    #return spec_radiance*4*np.pi*dist**2
 
 def sum_planck_curves():
     """
@@ -64,22 +67,26 @@ if __name__ == '__main__':
     if check:
         check_planck()
 
-    std_spec = generate_spec(2000*light_speed*8.0655e-5, light_speed/1e-6, 1000)
+    r_in = (40*(1./365))*9.4606e17
+    r_out = (150*(1./365))*9.4606e17
+
+    std_spec = generate_spec(2000*light_speed*8.0655e-5, light_speed/1e-6)
 
     # Make computed SED
     comp_spec_freq = np.linspace(2000*light_speed*8.0655e-5, light_speed/1e-6, 1e2)
-    disk_radii = np.logspace(1, 10) # units of ? reasonable values?
+    disk_radii = np.linspace(r_in, r_out)
 
     comp_spec_flux = []
+    temps = temp_struc(disk_radii, -3./4.)
     for nu in comp_spec_freq:
-        temps = temp_struc(disk_radii, -3./4.)
         lum = []
         for temp in temps:
-            lum.append(compute_planck_freq(temp, nu, 1000))
-        comp_spec_flux.append(sum(lum)*1e39)
+            lum.append(compute_planck_freq(temp, nu, 1000)*np.pi)
+        comp_spec_flux.append(sum(lum)*1e59)
 
-    plt.plot(std_spec[0], std_spec[1], ls='none', marker='o', color='k')
-    plt.plot(comp_spec_freq, comp_spec_flux, ls='-', color='r')
+    plt.plot(std_spec[0], std_spec[1], ls='none', marker='o', color='k', label='Input, $F^{1/3}$')
+    plt.plot(comp_spec_freq, comp_spec_flux, ls='-', color='r', label='Computed')
+    plt.legend()
     plt.xscale('log')
     plt.yscale('log')
     plt.show()
