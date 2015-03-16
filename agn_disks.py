@@ -32,8 +32,7 @@ def generate_spec(nu1, nu2, dist):
     returns spectrum with luminosity at the source of
     the object
     """
-
-    freq = np.linspace(nu1, nu2, 1e4)
+    freq = np.linspace(nu1, nu2, 1e3)
     return [freq, (freq**(1./3.))]
 
 def compute_planck_freq(freq, temp):
@@ -60,7 +59,6 @@ def check_planck():
     # http://www.astro.umd.edu/~cychen/MATLAB/ASTR120/Blackbody2.html
     temps = np.linspace(3000, 9000, 3)
     comp_spec_freq = np.linspace(light_speed/1e-9, light_speed/3000e-9, 1e6)
-    #comp_spec_freq = np.linspace(2000*light_speed*8.0655e-5, light_speed/1e-6, 1e2)
 
     comp_spec_flux = np.zeros((len(comp_spec_freq), len(temps)))
     for i, temp in enumerate(temps):
@@ -92,25 +90,25 @@ if __name__ == '__main__':
         check_planck()
 
     dist = 2.854e27 # in cm, usuing NGC 5548 (92.5 Mpc)
-    std_spec = generate_spec(2000*light_speed*8.0655e-5, light_speed/1e-6, dist)
+    std_spec = generate_spec(3.20435466e-16, light_speed/1e-6, dist)
 
-    r_in = 1e-9  # in light days
-    r_out = 40   # in light days
+    r_in = 1e-3  # in light days
+    r_out = 20   # in light days
     disk_radii = (np.logspace(r_in, r_out) * 2.5902e15) # create log-spaced array in cm
 
     # Make computed SED
-    comp_spec_freq = np.linspace(2000*light_speed*8.0655e-5, light_speed/1e-6, 1e3)
+    comp_spec_freq = np.linspace(3.20435466e-16, light_speed/1e-6, 1e6)
     temps = temp_struc(disk_radii, -3./4.)
 
     comp_spec_flux = np.zeros((len(comp_spec_freq), len(temps)))
     for i in range(len(temps)-1):
-            comp_spec_flux[:,i] = compute_planck_freq(comp_spec_freq, temps[i])* \
-                                  (2*np.pi*(disk_radii[i+1] - disk_radii[i])*disk_radii[i])
+        comp_spec_flux[:,i] = compute_planck_freq(comp_spec_freq, temps[i])* \
+                              (2*np.pi*(disk_radii[i+1] - disk_radii[i])*disk_radii[i])
 
     total_comp_flux = np.sum(comp_spec_flux, axis=1)
 
-    plt.plot(std_spec[0], std_spec[1], ls='-', lw=2, color='k', label='Input, $F^{1/3}$')
-    plt.plot(comp_spec_freq, comp_spec_flux, ls='--', color='r', label='')
+    #plt.plot(std_spec[0], std_spec[1], ls='-', lw=2, color='k', label='Input, $F^{1/3}$')
+    #plt.plot(comp_spec_freq, comp_spec_flux, ls='--', color='r', label='')
     plt.plot(comp_spec_freq, total_comp_flux, ls='-', lw=2, color='r', label='Computed')
     plt.xlabel(r'$\nu$', fontsize=20)
     plt.ylabel('Flux', fontsize=20)
