@@ -15,6 +15,7 @@ from astropy import units as u
 light_speed = 2.9979e8  # m s^-1
 planck_c = 6.626e-34    # J s
 boltzmann_c = 1.38e-23  # J K^-1
+grav_c = 6.67384e-11    # m^3 kg^-1 s^-2
 
 def readin_data(fname):
     """
@@ -80,40 +81,75 @@ def temp_struc(radii, power):
     inner disk
     """
     temp_struct = radii**power
-    scale = 1300 / temp_struct[0]
+    scale = 1300 / temp_struct[len(temp_struct)-1]
 
     return temp_struct * scale
+
+def find_peak_luminosity(freqs, flux, disk_radii, wavelength, freq, color):
+    emiss_lum = []
+    index = (np.abs(freqs - freq)).argmin()
+
+    for i in range(len(disk_radii)):
+        emiss_lum.append(flux[:,i][index])
+    emiss_lum = np.asarray(emiss_lum)
+
+    max_ind = emiss_lum.argmax()
+    print disk_radii[max_ind]/2.5902e15
+    plt.axvline(disk_radii[max_ind]/2.5902e15, color=color, ls='--')
+    plt.plot(disk_radii/2.5902e15, emiss_lum, label=wavelength, color=color, lw=2)
 
 if __name__ == '__main__':
     check = False
     if check:
         check_planck()
+    '''
+    Make computed SED
+    '''
+    #dist = 2.854e27 # in cm, usuing NGC 5548 (92.5 Mpc)
+    dist =  48*(3.08567758e24) # converting from Mpc to cm, for NGC 7469
+    bh_mass = (3e7)*(1.981e30) # converting from solar mass to kg
 
-    dist = 2.854e27 # in cm, usuing NGC 5548 (92.5 Mpc)
-    std_spec = generate_spec(3.20435466e-16, light_speed/1e-6, dist)
+    r_in = (3*((2*grav_c*bh_mass)/light_speed**2))*3.86e-14  # in light days
+    r_out = 80   # in light days
+    disk_radii = (np.linspace(r_in, r_out, 1e2)*2.5902e15) # create log-spaced array in cm
+    disk_max = max(disk_radii)
+    disk_min = min(disk_radii)
+    # make this logspaced
+    disk_radii_log = []
+    for i, radius in enumerate(disk_radii):
+        q2 = np.exp(np.log(disk_max/disk_min)/(len(disk_radii)-1))
+        disk_radii_log.append(disk_min*q2**(i-1.0))
+    disk_radii_log = np.asarray(disk_radii_log)
+    temps = temp_struc(disk_radii_log, -0.58)
 
-    r_in = 1e-3  # in light days
-    r_out = 20   # in light days
-    disk_radii = (np.logspace(r_in, r_out) * 2.5902e15) # create log-spaced array in cm
-
-    # Make computed SED
-    comp_spec_freq = np.linspace(3.20435466e-16, light_speed/1e-6, 1e6)
-    temps = temp_struc(disk_radii, -3./4.)
-
+    comp_spec_freq = np.linspace(light_speed/1e-9, light_speed/1e-4, 1e5)
     comp_spec_flux = np.zeros((len(comp_spec_freq), len(temps)))
     for i in range(len(temps)-1):
         comp_spec_flux[:,i] = compute_planck_freq(comp_spec_freq, temps[i])* \
-                              (2*np.pi*(disk_radii[i+1] - disk_radii[i])*disk_radii[i])
-
+                              (2*np.pi*(disk_radii_log[i+1] - disk_radii_log[i])*disk_radii_log[i])
     total_comp_flux = np.sum(comp_spec_flux, axis=1)
 
+    wavelengths = [1315, 1810, 4865, 6962]
+    frequencies = [2281368821292775.5, 1657458563535911.8, 616649537512847., 430910657856937.7]
+    colors = ['k', 'g', 'r', 'b']
+    for color, wave, freq in zip(colors, wavelengths, frequencies):
+        find_peak_luminosity(comp_spec_freq, comp_spec_flux, disk_radii_log, wave, freq, color)
+    #find_peak_luminosity(comp_spec_freq, comp_spec_flux, disk_radii_log, 5100, 5.9*10**14, 'b')
+    plt.xlabel('Light Days', fontsize=20)
+    plt.ylabel('Luminosity', fontsize=20)
+    plt.legend(frameon=False, loc='upper right', fontsize=12)
+    plt.ylim(1e25, 2.5e26)
+    plt.tight_layout()
+    plt.show()
+
+    #std_spec = generate_spec(3.20435466e-16, light_speed/5300e-10, dist)
     #plt.plot(std_spec[0], std_spec[1], ls='-', lw=2, color='k', label='Input, $F^{1/3}$')
+
     #plt.plot(comp_spec_freq, comp_spec_flux, ls='--', color='r', label='')
     plt.plot(comp_spec_freq, total_comp_flux, ls='-', lw=2, color='r', label='Computed')
     plt.xlabel(r'$\nu$', fontsize=20)
     plt.ylabel('Flux', fontsize=20)
-    plt.legend()
-    #plt.xlim(10e14, 10e17)
+    plt.legend(frameon=False, loc='upper left', fontsize=12)
     plt.xscale('log')
     plt.yscale('log')
     plt.show()
